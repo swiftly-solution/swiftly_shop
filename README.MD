@@ -46,9 +46,14 @@
 
 * This is a WIP plugin, all of the "modules" will be implemented right onto the plugin, it will not be a modular plugin.
 
+### FEATURES 📙
+
+* Simple HP / Kill system, everything configurable through ``addons/swiftly_configs/swiftly_shop.json``.
+
 ### TODO 🛡️
 
 * Add features to the shop (Medic, TAGS, more events etc.).
+
 
 ### Creating A Pull Request 😃
 
