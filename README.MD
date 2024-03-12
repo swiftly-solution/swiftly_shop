@@ -48,7 +48,11 @@
 
 ### FEATURES 📙
 
-* Simple HP / Kill system, everything configurable through ``addons/swiftly_configs/swiftly_shop.json``.
+* Simple HP / Kill system.
+* Simple Armor / Kill system.
+* Simple Killscreen system.
+* Simple Grenades Pack on Spawn system.
+* Everything is configurable through ``addons/swiftly/configs/swiftly_shop.json``
 
 ### TODO 🛡️
 
