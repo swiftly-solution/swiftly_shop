@@ -93,7 +93,7 @@ void Command_ShopBuyHP(int playerID, const char **args, uint32_t argsCount, bool
     } else {
         db->Query("UPDATE %s SET credits = credits - %d WHERE steamid = '%llu'", "players_credits", CreditsToBuyHP, player->GetSteamID());
         db->Query("UPDATE %s SET HasHPAccess = 1, HasHPActivated = 1 WHERE steamid = '%llu'", "players_features", player->GetSteamID());
-        player->SendMsg(HUD_PRINTTALK, "%s %s.", config->Fetch<const char*>("swiftly_shop.prefix")), FetchTranslation("swiftly_shop.BoughtFeature");
+        player->SendMsg(HUD_PRINTTALK, "%s %s.", config->Fetch<const char*>("swiftly_shop.prefix"), FetchTranslation("swiftly_shop.BoughtFeature"));
         player->SendMsg(HUD_PRINTTALK, "%s The feature was activated by default.", config->Fetch<const char*>("swiftly_shop.prefix"));
         player->HideMenu();
     }
