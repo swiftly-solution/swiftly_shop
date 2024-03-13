@@ -30,6 +30,18 @@ void OnProgramLoad(const char *pluginName, const char *mainFilePath)
     menus = new Menus(pluginName);
 }
 
+
+void UpdatePlayerCredits(Player* player, int credits)
+{
+    if (!db->IsConnected())
+        return;
+
+    db->Query("UPDATE %s SET credits = %d WHERE steamid = '%llu'", "players_credits", credits, player->GetSteamID());
+    player->vars->Set("credits", credits);
+}
+
+
+
 void Command_Credits(int playerID, const char **args, uint32_t argsCount, bool silent)
 {
      if (playerID == -1)
@@ -43,10 +55,9 @@ void Command_Credits(int playerID, const char **args, uint32_t argsCount, bool s
         if (player == nullptr)
         return;
 
-    DB_Result result = db->Query("select * from `players_credits` where steamid = '%llu' limit 1", player->GetSteamID());
+    int credits = player->vars->Get<int>("credits");
 
-    player->SendMsg(HUD_PRINTTALK, "%s You have %d credits.", config->Fetch<const char*>("swiftly_shop.prefix"), (db->fetchValue<int>(result, 0, "credits")));
-    player->HideMenu();
+    player->SendMsg(HUD_PRINTTALK, "%s You have %d credits.", config->Fetch<const char*>("swiftly_shop.prefix"), credits);
 }
 
 
@@ -79,12 +90,7 @@ void Command_ShopBuyHP(int playerID, const char **args, uint32_t argsCount, bool
         if (player == nullptr)
         return;
 
-    DB_Result result = db->Query("select * from `players_credits` where steamid = '%llu' limit 1", player->GetSteamID());
-    int currentCredits = 0;
-    if(result.size() > 0) {
-        currentCredits = db->fetchValue<int>(result, 0, "credits");
-    }
-
+    int currentCredits = player->vars->Get<int>("credits");
     int CreditsToBuyHP = config->Fetch<int>("swiftly_shop.CreditsToBuyHP");
 
     if (currentCredits < CreditsToBuyHP) {
@@ -92,8 +98,9 @@ void Command_ShopBuyHP(int playerID, const char **args, uint32_t argsCount, bool
         player->HideMenu();
         return;
     } else {
-        db->Query("UPDATE %s SET credits = credits - %d WHERE steamid = '%llu'", "players_credits", CreditsToBuyHP, player->GetSteamID());
         db->Query("UPDATE %s SET HasHPAccess = 1, HasHPActivated = 1 WHERE steamid = '%llu'", "players_features", player->GetSteamID());
+        UpdatePlayerCredits(player, currentCredits - CreditsToBuyHP);
+        player->vars->Set("HasHPActivated", 1);
         player->SendMsg(HUD_PRINTTALK, "%s %s.", config->Fetch<const char*>("swiftly_shop.prefix"), FetchTranslation("swiftly_shop.BoughtFeature"));
         player->SendMsg(HUD_PRINTTALK, "%s The feature was activated by default.", config->Fetch<const char*>("swiftly_shop.prefix"));
         player->HideMenu();
@@ -113,11 +120,7 @@ void Command_ShopBuyArmor(int playerID, const char **args, uint32_t argsCount, b
         if (player == nullptr)
         return;
 
-    DB_Result result = db->Query("select * from `players_credits` where steamid = '%llu' limit 1", player->GetSteamID());
-    int currentCredits = 0;
-    if(result.size() > 0) {
-        currentCredits = db->fetchValue<int>(result, 0, "credits");
-    }
+    int currentCredits = player->vars->Get<int>("credits");
 
     int CreditsToBuyArmor = config->Fetch<int>("swiftly_shop.CreditsToBuyArmor");
 
@@ -126,8 +129,9 @@ void Command_ShopBuyArmor(int playerID, const char **args, uint32_t argsCount, b
         player->HideMenu();
         return;
     } else {
-        db->Query("UPDATE %s SET credits = credits - %d WHERE steamid = '%llu'", "players_credits", CreditsToBuyArmor, player->GetSteamID());
         db->Query("UPDATE %s SET HasHrmorAccess = 1, HasArmorActivated = 1 WHERE steamid = '%llu'", "players_features", player->GetSteamID());
+        UpdatePlayerCredits(player, currentCredits - CreditsToBuyArmor);
+        player->vars->Set("HasArmorActivated", 1);
         player->SendMsg(HUD_PRINTTALK, "%s %s.", config->Fetch<const char*>("swiftly_shop.prefix"), FetchTranslation("swiftly_shop.BoughtFeature"));
         player->SendMsg(HUD_PRINTTALK, "%s The feature was activated by default.", config->Fetch<const char*>("swiftly_shop.prefix"));
         player->HideMenu();
@@ -147,11 +151,7 @@ void Command_ShopBuyKillScreen(int playerID, const char **args, uint32_t argsCou
         if (player == nullptr)
         return;
 
-    DB_Result result = db->Query("select * from `players_credits` where steamid = '%llu' limit 1", player->GetSteamID());
-    int currentCredits = 0;
-    if(result.size() > 0) {
-        currentCredits = db->fetchValue<int>(result, 0, "credits");
-    }
+    int currentCredits = player->vars->Get<int>("credits");
 
     int CreditsToBuyKillScreen = config->Fetch<int>("swiftly_shop.CreditsToBuyKillScreen");
 
@@ -160,8 +160,9 @@ void Command_ShopBuyKillScreen(int playerID, const char **args, uint32_t argsCou
         player->HideMenu();
         return;
     } else {
-        db->Query("UPDATE %s SET credits = credits - %d WHERE steamid = '%llu'", "players_credits", CreditsToBuyKillScreen, player->GetSteamID());
         db->Query("UPDATE %s SET HasKillScreenAccess = 1, HasKillScreenActivated = 1 WHERE steamid = '%llu'", "players_features", player->GetSteamID());
+        UpdatePlayerCredits(player, currentCredits - CreditsToBuyKillScreen);
+        player->vars->Set("HasKillScreenActivated", 1);
         player->SendMsg(HUD_PRINTTALK, "%s %s.", config->Fetch<const char*>("swiftly_shop.prefix"), FetchTranslation("swiftly_shop.BoughtFeature"));
         player->SendMsg(HUD_PRINTTALK, "%s The feature was activated by default.", config->Fetch<const char*>("swiftly_shop.prefix"));
         player->HideMenu();
@@ -181,11 +182,7 @@ void Command_ShopBuyGrenades(int playerID, const char **args, uint32_t argsCount
         if (player == nullptr)
         return;
 
-    DB_Result result = db->Query("select * from `players_credits` where steamid = '%llu' limit 1", player->GetSteamID());
-    int currentCredits = 0;
-    if(result.size() > 0) {
-        currentCredits = db->fetchValue<int>(result, 0, "credits");
-    }
+    int currentCredits = player->vars->Get<int>("credits");
 
     int CreditsToBuyGrenadesPack = config->Fetch<int>("swiftly_shop.CreditsToBuyGrenadesPack");
 
@@ -196,6 +193,8 @@ void Command_ShopBuyGrenades(int playerID, const char **args, uint32_t argsCount
     } else {
         db->Query("UPDATE %s SET credits = credits - %d WHERE steamid = '%llu'", "players_credits", CreditsToBuyGrenadesPack, player->GetSteamID());
         db->Query("UPDATE %s SET HasGrenadesAccess = 1, HasGrenadesActivated = 1 WHERE steamid = '%llu'", "players_features", player->GetSteamID());
+        UpdatePlayerCredits(player, currentCredits - CreditsToBuyGrenadesPack);
+        player->vars->Set("HasGrenadesAccess", 1);
         player->SendMsg(HUD_PRINTTALK, "%s %s.", config->Fetch<const char*>("swiftly_shop.prefix"), FetchTranslation("swiftly_shop.BoughtFeature"));
         player->SendMsg(HUD_PRINTTALK, "%s The feature was activated by default.", config->Fetch<const char*>("swiftly_shop.prefix"));
         player->HideMenu();
@@ -215,13 +214,8 @@ void Command_ShopActivateHP(int playerID, const char **args, uint32_t argsCount,
         if (player == nullptr)
         return;
 
-    DB_Result result = db->Query("select * from `players_features` where steamid = '%llu' limit 1", player->GetSteamID());
-    int HasHPActivated = 0;
-    int HasHPAccess = 0;
-    if(result.size() > 0) {
-        HasHPActivated = db->fetchValue<int>(result, 0, "HasHPActivated");
-        HasHPAccess = db->fetchValue<int>(result, 0, "HasHPAccess");
-    }
+    int HasHPActivated = player->vars->Get<int>("HasHPActivated");
+    int HasHPAccess = player->vars->Get<int>("HasHPAccess");
 
     if (HasHPAccess == 0) {
         player->SendMsg(HUD_PRINTTALK, "%s %s.", config->Fetch<const char*>("swiftly_shop.prefix"), FetchTranslation("swiftly_shop.NoAccess"));
@@ -233,6 +227,7 @@ void Command_ShopActivateHP(int playerID, const char **args, uint32_t argsCount,
         return;
     } else {
         db->Query("UPDATE %s SET HasHPActivated = 1 WHERE steamid = '%llu'", "players_features", player->GetSteamID());
+        player->vars->Set("HasHPActivated", 1);
         player->SendMsg(HUD_PRINTTALK, "%s %s.", config->Fetch<const char*>("swiftly_shop.prefix"), FetchTranslation("swiftly_shop.ActivatedFeature"));
         player->HideMenu();
     }
@@ -251,13 +246,8 @@ void Command_ShopActivateGrenadesPack(int playerID, const char **args, uint32_t 
         if (player == nullptr)
         return;
 
-    DB_Result result = db->Query("select * from `players_features` where steamid = '%llu' limit 1", player->GetSteamID());
-    int HasGrenadesActivated = 0;
-    int HasGrenadesAccess = 0;
-    if(result.size() > 0) {
-        HasGrenadesActivated = db->fetchValue<int>(result, 0, "HasGrenadesActivated");
-        HasGrenadesAccess = db->fetchValue<int>(result, 0, "HasGrenadesAccess");
-    }
+        int HasGrenadesActivated = player->vars->Get<int>("HasGrenadesActivated");
+        int HasGrenadesAccess = player->vars->Get<int>("HasGrenadesAccess");
 
     if (HasGrenadesAccess == 0) {
         player->SendMsg(HUD_PRINTTALK, "%s %s.", config->Fetch<const char*>("swiftly_shop.prefix"), FetchTranslation("swiftly_shop.NoAccess"));
@@ -269,6 +259,7 @@ void Command_ShopActivateGrenadesPack(int playerID, const char **args, uint32_t 
         return;
     } else {
         db->Query("UPDATE %s SET HasGrenadesActivated = 1 WHERE steamid = '%llu'", "players_features", player->GetSteamID());
+        player->vars->Set("HasGrenadesActivated", 1);
         player->SendMsg(HUD_PRINTTALK, "%s %s.", config->Fetch<const char*>("swiftly_shop.prefix"), FetchTranslation("swiftly_shop.ActivatedFeature"));
         player->HideMenu();
     }
@@ -287,13 +278,8 @@ void Command_ShopDeActivateGrenadesPack(int playerID, const char **args, uint32_
         if (player == nullptr)
         return;
 
-    DB_Result result = db->Query("select * from `players_features` where steamid = '%llu' limit 1", player->GetSteamID());
-    int HasGrenadesActivated = 0;
-    int HasGrenadesAccess = 0;
-    if(result.size() > 0) {
-        HasGrenadesActivated = db->fetchValue<int>(result, 0, "HasGrenadesActivated");
-        HasGrenadesAccess = db->fetchValue<int>(result, 0, "HasGrenadesAccess");
-    }
+    int HasGrenadesActivated = player->vars->Get<int>("HasGrenadesActivated");
+    int HasGrenadesAccess = player->vars->Get<int>("HasGrenadesAccess");
 
     if (HasGrenadesAccess == 0) {
         player->SendMsg(HUD_PRINTTALK, "%s %s.", config->Fetch<const char*>("swiftly_shop.prefix"), FetchTranslation("swiftly_shop.NoAccess"));
@@ -305,6 +291,7 @@ void Command_ShopDeActivateGrenadesPack(int playerID, const char **args, uint32_
         return;
     } else {
         db->Query("UPDATE %s SET HasGrenadesActivated = 0 WHERE steamid = '%llu'", "players_features", player->GetSteamID());
+        player->vars->Set("HasGrenadesActivated", 0);
         player->SendMsg(HUD_PRINTTALK, "%s %s.", config->Fetch<const char*>("swiftly_shop.prefix"), FetchTranslation("swiftly_shop.DeactivatedFeature"));
         player->HideMenu();
     }
@@ -323,13 +310,8 @@ void Command_ShopDeactivateHP(int playerID, const char **args, uint32_t argsCoun
         if (player == nullptr)
         return;
 
-    DB_Result result = db->Query("select * from `players_features` where steamid = '%llu' limit 1", player->GetSteamID());
-    int HasHPActivated = 0;
-    int HasHPAccess = 0;
-    if(result.size() > 0) {
-        HasHPActivated = db->fetchValue<int>(result, 0, "HasHPActivated");
-        HasHPAccess = db->fetchValue<int>(result, 0, "HasHPAccess");
-    }
+    int HasHPActivated = player->vars->Get<int>("HasHPActivated");
+    int HasHPAccess = player->vars->Get<int>("HasHPAccess");
 
     if (HasHPAccess == 0) {
         player->SendMsg(HUD_PRINTTALK, "%s %s.", config->Fetch<const char*>("swiftly_shop.prefix"), FetchTranslation("swiftly_shop.NoAccess"));
@@ -341,6 +323,7 @@ void Command_ShopDeactivateHP(int playerID, const char **args, uint32_t argsCoun
         return;
     } else {
         db->Query("UPDATE %s SET HasHPActivated = 0 WHERE steamid = '%llu'", "players_features", player->GetSteamID());
+        player->vars->Set("HasHPActivated", 0);
         player->SendMsg(HUD_PRINTTALK, "%s %s.", config->Fetch<const char*>("swiftly_shop.prefix"), FetchTranslation("swiftly_shop.DeactivatedFeature"));
         player->HideMenu();
     }
@@ -359,15 +342,10 @@ void Command_ShopActivateArmor(int playerID, const char **args, uint32_t argsCou
         if (player == nullptr)
         return;
 
-    DB_Result result = db->Query("select * from `players_features` where steamid = '%llu' limit 1", player->GetSteamID());
-    int HasArmorActivated = 0;
-    int HasHrmorAccess = 0;
-    if(result.size() > 0) {
-        HasArmorActivated = db->fetchValue<int>(result, 0, "HasArmorActivated");
-        HasHrmorAccess = db->fetchValue<int>(result, 0, "HasHrmorAccess");
-    }
+    int HasArmorActivated = player->vars->Get<int>("HasArmorActivated");
+    int HasArmorAccess = player->vars->Get<int>("HasArmorAccess");
 
-    if (HasHrmorAccess == 0) {
+    if (HasArmorAccess == 0) {
         player->SendMsg(HUD_PRINTTALK, "%s %s.", config->Fetch<const char*>("swiftly_shop.prefix"), FetchTranslation("swiftly_shop.NoAccess"));
         player->HideMenu();
         return;
@@ -377,6 +355,7 @@ void Command_ShopActivateArmor(int playerID, const char **args, uint32_t argsCou
         return;
     } else {
         db->Query("UPDATE %s SET HasArmorActivated = 1 WHERE steamid = '%llu'", "players_features", player->GetSteamID());
+        player->vars->Set("HasArmorActivated", 1);
         player->SendMsg(HUD_PRINTTALK, "%s %s.", config->Fetch<const char*>("swiftly_shop.prefix"), FetchTranslation("swiftly_shop.ActivatedFeature"));
         player->HideMenu();
     }
@@ -395,15 +374,10 @@ void Command_ShopDeactivateArmor(int playerID, const char **args, uint32_t argsC
         if (player == nullptr)
         return;
 
-    DB_Result result = db->Query("select * from `players_features` where steamid = '%llu' limit 1", player->GetSteamID());
-    int HasArmorActivated = 0;
-    int HasHrmorAccess = 0;
-    if(result.size() > 0) {
-        HasArmorActivated = db->fetchValue<int>(result, 0, "HasArmorActivated");
-        HasHrmorAccess = db->fetchValue<int>(result, 0, "HasHrmorAccess");
-    }
+    int HasArmorActivated = player->vars->Get<int>("HasArmorActivated");
+    int HasArmorAccess = player->vars->Get<int>("HasArmorAccess");
 
-    if (HasHrmorAccess == 0) {
+    if (HasArmorAccess == 0) {
         player->SendMsg(HUD_PRINTTALK, "%s %s.", config->Fetch<const char*>("swiftly_shop.prefix"), FetchTranslation("swiftly_shop.NoAccess"));
         player->HideMenu();
         return;
@@ -413,6 +387,7 @@ void Command_ShopDeactivateArmor(int playerID, const char **args, uint32_t argsC
         return;
     } else {
         db->Query("UPDATE %s SET HasArmorActivated = 0 WHERE steamid = '%llu'", "players_features", player->GetSteamID());
+        player->vars->Set("HasArmorActivated", 0);
         player->SendMsg(HUD_PRINTTALK, "%s %s.", config->Fetch<const char*>("swiftly_shop.prefix"), FetchTranslation("swiftly_shop.DeactivatedFeature"));
         player->HideMenu();
     }
@@ -431,13 +406,8 @@ void Command_ShopActivateKillScreen(int playerID, const char **args, uint32_t ar
         if (player == nullptr)
         return;
 
-    DB_Result result = db->Query("select * from `players_features` where steamid = '%llu' limit 1", player->GetSteamID());
-    int HasKillScreenActivated = 0;
-    int HasKillScreenAccess = 0;
-    if(result.size() > 0) {
-        HasKillScreenActivated = db->fetchValue<int>(result, 0, "HasKillScreenActivated");
-        HasKillScreenAccess = db->fetchValue<int>(result, 0, "HasKillScreenAccess");
-    }
+    int HasKillScreenActivated = player->vars->Get<int>("HasKillScreenActivated");
+    int HasKillScreenAccess = player->vars->Get<int>("HasKillScreenAccess");
 
     if (HasKillScreenAccess == 0) {
         player->SendMsg(HUD_PRINTTALK, "%s %s.", config->Fetch<const char*>("swiftly_shop.prefix"), FetchTranslation("swiftly_shop.NoAccess"));
@@ -449,6 +419,7 @@ void Command_ShopActivateKillScreen(int playerID, const char **args, uint32_t ar
         return;
     } else {
         db->Query("UPDATE %s SET HasKillScreenActivated = 1 WHERE steamid = '%llu'", "players_features", player->GetSteamID());
+        player->vars->Set("HasKillScreenActivated", 1);
         player->SendMsg(HUD_PRINTTALK, "%s %s.", config->Fetch<const char*>("swiftly_shop.prefix"), FetchTranslation("swiftly_shop.ActivatedFeature"));
         player->HideMenu();
     }
@@ -467,13 +438,8 @@ void Command_ShopDeactivateKillScreen(int playerID, const char **args, uint32_t 
         if (player == nullptr)
         return;
 
-    DB_Result result = db->Query("select * from `players_features` where steamid = '%llu' limit 1", player->GetSteamID());
-    int HasKillScreenActivated = 0;
-    int HasKillScreenAccess = 0;
-    if(result.size() > 0) {
-        HasKillScreenActivated = db->fetchValue<int>(result, 0, "HasKillScreenActivated");
-        HasKillScreenAccess = db->fetchValue<int>(result, 0, "HasKillScreenAccess");
-    }
+    int HasKillScreenActivated = player->vars->Get<int>("HasKillScreenActivated");
+    int HasKillScreenAccess = player->vars->Get<int>("HasKillScreenAccess");
 
     if (HasKillScreenAccess == 0) {
         player->SendMsg(HUD_PRINTTALK, "%s %s.", config->Fetch<const char*>("swiftly_shop.prefix"), FetchTranslation("swiftly_shop.NoAccess"));
@@ -485,6 +451,7 @@ void Command_ShopDeactivateKillScreen(int playerID, const char **args, uint32_t 
         return;
     } else {
         db->Query("UPDATE %s SET HasKillScreenActivated = 0 WHERE steamid = '%llu'", "players_features", player->GetSteamID());
+        player->vars->Set("HasKillScreenActivated", 0);
         player->SendMsg(HUD_PRINTTALK, "%s %s.", config->Fetch<const char*>("swiftly_shop.prefix"), FetchTranslation("swiftly_shop.DeactivatedFeature"));
         player->HideMenu();
     }
@@ -501,11 +468,7 @@ void OnPlayerSpawn(Player *player)
         db->Query("insert ignore into `players_features` (steamid) values ('%llu')", player->GetSteamID());
     }
 
-    DB_Result result = db->Query("select * from `players_features` where steamid = '%llu' limit 1", player->GetSteamID());
-    int HasGrenadesActivated = 0;
-    if(result.size() > 0) {
-        HasGrenadesActivated = db->fetchValue<int>(result, 0, "HasGrenadesActivated");
-    }
+    int HasGrenadesActivated = player->vars->Get<int>("HasGrenadesActivated");
 
     if(HasGrenadesActivated == 1) {
         player->weapons->GiveWeapon("weapon_hegrenade");
@@ -521,7 +484,7 @@ void BombPlanted(Player* player, unsigned short site)
         return;
 
     if (player) {
-        db->Query("UPDATE %s SET credits = credits + %d WHERE steamid = '%llu'", "players_credits", config->Fetch<int>("swiftly_shop.BombPlanted"), player->GetSteamID());
+        UpdatePlayerCredits(player, player->vars->Get<int>("credits") + config->Fetch<int>("swiftly_shop.BombPlanted"));
     }
 }
 
@@ -531,40 +494,70 @@ void BombDefused(Player* player, unsigned short site)
         return;
 
     if (player) {
-        db->Query("UPDATE %s SET credits = credits + %d WHERE steamid = '%llu'", "players_credits", config->Fetch<int>("swiftly_shop.BombDefused"), player->GetSteamID());
+        UpdatePlayerCredits(player, player->vars->Get<int>("credits") + config->Fetch<int>("swiftly_shop.BombDefused"));
+    }
+}
+
+void OnClientFullConnected(Player* player)
+{
+    if (!db->IsConnected())
+        return;
+
+    if (player) {
+        int credits = 0;
+        DB_Result result = db->Query("SELECT credits FROM %s WHERE steamid = '%llu' LIMIT 1", "players_credits", player->GetSteamID());
+        if(result.size() > 0) {
+            credits = db->fetchValue<int>(result, 0, "credits");
+        }
+        player->vars->Set("credits", credits);
+        int HasHPActivated = 0;
+        int HasHPAccess = 0;
+        int HasGrenadesAccess = 0;
+        int HasGrenadesActivated = 0;
+        int HasKillScreenAccess = 0;
+        int HasKillScreenActivated = 0;
+        int HasArmorActivated = 0;
+        int HasArmorAccess = 0;
+        DB_Result result1 = db->Query("SELECT * FROM %s WHERE steamid = '%llu' LIMIT 1", "players_features", player->GetSteamID());
+        if(result1.size() > 0) {
+            HasHPActivated = db->fetchValue<int>(result1, 0, "HasHPActivated");
+            HasKillScreenActivated = db->fetchValue<int>(result1, 0, "HasKillScreenActivated");
+            HasArmorActivated = db->fetchValue<int>(result1, 0, "HasArmorActivated");
+            HasGrenadesActivated = db->fetchValue<int>(result1, 0, "HasGrenadesActivated");
+            HasHPAccess = db->fetchValue<int>(result1, 0, "HasHPAccess");
+            HasKillScreenAccess = db->fetchValue<int>(result1, 0, "HasKillScreenAccess");
+            HasArmorAccess = db->fetchValue<int>(result1, 0, "HasArmorAccess");
+            HasGrenadesAccess = db->fetchValue<int>(result1, 0, "HasGrenadesAccess");
+        }
+        player->vars->Set("HasHPActivated", HasHPActivated);
+        player->vars->Set("HasKillScreenActivated", HasKillScreenActivated);
+        player->vars->Set("HasArmorActivated", HasArmorActivated);
+        player->vars->Set("HasGrenadesActivated", HasGrenadesActivated);
+        player->vars->Set("HasHPAccess", HasHPAccess);
+        player->vars->Set("HasKillScreenAccess", HasKillScreenAccess);
+        player->vars->Set("HasArmorAccess", HasArmorAccess);
+        player->vars->Set("HasGrenadesAccess", HasGrenadesAccess);
     }
 }
 
 void OnPlayerDeath(Player *player, Player *attacker, Player *assister, bool assistedflash, const char *weapon, bool headshot, short dominated, short revenge, short wipe, short penetrated, bool noreplay, bool noscope, bool thrusmoke, bool attackerblind, float distance, short dmg_health, short dmg_armor, short hitgroup)
 {
 
-    DB_Result result3;
-    DB_Result result4;
-    DB_Result result5;
-
     DB_Result result = db->Query("SELECT credits FROM %s WHERE steamid = '%llu' LIMIT 1", "players_credits", player->GetSteamID());
+    DB_Result result1 = db->Query("SELECT credits FROM %s WHERE steamid = '%llu' LIMIT 1", "players_credits", attacker->GetSteamID());
+    int currentCreditsAttacker = 0;
     int currentCredits = 0;
     if(result.size() > 0) {
         currentCredits = db->fetchValue<int>(result, 0, "credits");
     }
-
-    result3 = db->Query("SELECT HasHPActivated FROM %s WHERE steamid = '%llu' LIMIT 1", "players_features", attacker->GetSteamID());
-    int HasHPActivated = 0;
-    if(result3.size() > 0) {
-        HasHPActivated = db->fetchValue<int>(result3, 0, "HasHPActivated");
+    if (result1.size() > 0) {
+        currentCreditsAttacker = db->fetchValue<int>(result1, 0, "credits");
     }
 
-    result4 = db->Query("SELECT HasKillScreenActivated FROM %s WHERE steamid = '%llu' LIMIT 1", "players_features", attacker->GetSteamID());
-    int HasKillScreenActivated = 0;
-    if(result4.size() > 0) {
-        HasKillScreenActivated = db->fetchValue<int>(result4, 0, "HasKillScreenActivated");
-    }
+    int HasHPActivated = attacker->vars->Get<int>("HasHPActivated");
+    int HasArmorActivated = attacker->vars->Get<int>("HasArmorActivated");
+    int HasKillScreenActivated = attacker->vars->Get<int>("HasKillScreenActivated");
 
-    result5 = db->Query("SELECT HasArmorActivated FROM %s WHERE steamid = '%llu' LIMIT 1", "players_features", attacker->GetSteamID());
-    int HasArmorActivated = 0;
-    if(result5.size() > 0) {
-        HasArmorActivated = db->fetchValue<int>(result5, 0, "HasArmorActivated");
-    }
 
     int healthtogive = config->Fetch<int>("swiftly_shop.HealthToGive");
     int armortogive = config->Fetch<int>("swiftly_shop.ArmorToGive");
@@ -578,14 +571,15 @@ void OnPlayerDeath(Player *player, Player *attacker, Player *assister, bool assi
             int deathCredits = config->Fetch<int>("swiftly_shop.Death");
             sprintf(buffer, FetchTranslation("swiftly_shop.Death"), deathCredits);
             player->SendMsg(HUD_PRINTTALK, "%s %s.", config->Fetch<const char*>("swiftly_shop.prefix"), buffer);
-            db->Query("UPDATE %s SET credits = credits - %d WHERE steamid = '%llu'", "players_credits", config->Fetch<int>("swiftly_shop.Death"), player->GetSteamID());
+            UpdatePlayerCredits(attacker, currentCreditsAttacker - deathCredits);
         }
     } else if (headshot && attacker) {
         char buffer[256];
         int headshotCredits = config->Fetch<int>("swiftly_shop.Headshot");
         sprintf(buffer, FetchTranslation("swiftly_shop.Headshot"), headshotCredits);
         attacker->SendMsg(HUD_PRINTTALK, "%s %s.", config->Fetch<const char*>("swiftly_shop.prefix"), buffer);
-        db->Query("UPDATE %s SET credits = credits + %d WHERE steamid = '%llu'", "players_credits", headshotCredits, attacker->GetSteamID());
+        UpdatePlayerCredits(attacker, currentCreditsAttacker + headshotCredits);
+        print("%d\n", HasKillScreenActivated);
         if (HasHPActivated == 1 && playerhealth <= maxhealth){
             char buffer[256];
             sprintf(buffer, FetchTranslation("swiftly_shop.HealthGiven"), healthtogive);
@@ -607,14 +601,14 @@ void OnPlayerDeath(Player *player, Player *attacker, Player *assister, bool assi
             int deathCredits = config->Fetch<int>("swiftly_shop.Death");
             sprintf(buffer, FetchTranslation("swiftly_shop.Death"), deathCredits);
             player->SendMsg(HUD_PRINTTALK, "%s %s.", config->Fetch<const char*>("swiftly_shop.prefix"), buffer);
-            db->Query("UPDATE %s SET credits = credits - %d WHERE steamid = '%llu'", "players_credits", config->Fetch<int>("swiftly_shop.Death"), player->GetSteamID());
+            UpdatePlayerCredits(player, currentCredits - deathCredits);
         }
     } else if (noscope && attacker) {
         char buffer[256];
         int noscopeCredits = config->Fetch<int>("swiftly_shop.Noscope");
         sprintf(buffer, FetchTranslation("swiftly_shop.Noscope"), noscopeCredits);
         attacker->SendMsg(HUD_PRINTTALK, "%s %s.", config->Fetch<const char*>("swiftly_shop.prefix"), buffer);
-        db->Query("UPDATE %s SET credits = credits + %d WHERE steamid = '%llu'", "players_credits", noscopeCredits, attacker->GetSteamID());
+        UpdatePlayerCredits(attacker, currentCreditsAttacker + noscopeCredits);
         if (HasHPActivated == 1 && playerhealth <= maxhealth){
             char buffer[256];
             sprintf(buffer, FetchTranslation("swiftly_shop.HealthGiven"), healthtogive);
@@ -636,14 +630,14 @@ void OnPlayerDeath(Player *player, Player *attacker, Player *assister, bool assi
             int deathCredits = config->Fetch<int>("swiftly_shop.Death");
             sprintf(buffer, FetchTranslation("swiftly_shop.Death"), deathCredits);
             player->SendMsg(HUD_PRINTTALK, "%s %s.", config->Fetch<const char*>("swiftly_shop.prefix"), buffer);
-            db->Query("UPDATE %s SET credits = credits - %d WHERE steamid = '%llu'", "players_credits", config->Fetch<int>("swiftly_shop.Death"), player->GetSteamID());
+            UpdatePlayerCredits(player, currentCredits - deathCredits);
         }
     } else if (attacker) {
         char buffer[256];
         int NormalKill = config->Fetch<int>("swiftly_shop.NormalKill");
         sprintf(buffer, FetchTranslation("swiftly_shop.NormalKill"), NormalKill);
         attacker->SendMsg(HUD_PRINTTALK, "%s %s.", config->Fetch<const char*>("swiftly_shop.prefix"), buffer);
-        db->Query("UPDATE %s SET credits = credits + %d WHERE steamid = '%llu'", "players_credits", NormalKill, attacker->GetSteamID());
+        UpdatePlayerCredits(attacker, currentCreditsAttacker + NormalKill);
         if (HasHPActivated == 1 && playerhealth <= maxhealth){
             char buffer[256];
             sprintf(buffer, FetchTranslation("swiftly_shop.HealthGiven"), healthtogive);
@@ -665,7 +659,7 @@ void OnPlayerDeath(Player *player, Player *attacker, Player *assister, bool assi
             int deathCredits = config->Fetch<int>("swiftly_shop.Death");
             sprintf(buffer, FetchTranslation("swiftly_shop.Death"), deathCredits);
             player->SendMsg(HUD_PRINTTALK, "%s %s.", config->Fetch<const char*>("swiftly_shop.prefix"), buffer);
-            db->Query("UPDATE %s SET credits = credits - %d WHERE steamid = '%llu'", "players_credits", config->Fetch<int>("swiftly_shop.Death"), player->GetSteamID());
+            UpdatePlayerCredits(player, currentCredits - deathCredits);
         }
     }
 }
@@ -696,7 +690,7 @@ void OnPluginStart()
 
     db = new Database("swiftly_shop");
     DB_Result result = db->Query("CREATE TABLE IF NOT EXISTS `players_credits` (`steamid` varchar(128) NOT NULL, `credits` int(11) NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;");
-    DB_Result result1 = db->Query("CREATE TABLE IF NOT EXISTS `players_features` (`steamid` varchar(128) NOT NULL, `HasHPAccess` int(11) NOT NULL, `HasHPActivated` int(11) NOT NULL, `HasKillScreenAccess` int(11) NOT NULL, `HasKillScreenActivated` int(11) NOT NULL, `HasHrmorAccess` int(11) NOT NULL, `HasArmorActivated` int(11) NOT NULL, `HasGrenadesAccess` int(11) NOT NULL, `HasGrenadesActivated` int(11) NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;");
+    DB_Result result1 = db->Query("CREATE TABLE IF NOT EXISTS `players_features` (`steamid` varchar(128) NOT NULL, `HasHPAccess` int(11) NOT NULL, `HasHPActivated` int(11) NOT NULL, `HasKillScreenAccess` int(11) NOT NULL, `HasKillScreenActivated` int(11) NOT NULL, `HasArmorAccess` int(11) NOT NULL, `HasArmorActivated` int(11) NOT NULL, `HasGrenadesAccess` int(11) NOT NULL, `HasGrenadesActivated` int(11) NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;");
     if (result.size() > 0)
             db->Query("ALTER TABLE `players_credits` ADD UNIQUE KEY `steamid` (`steamid`);");
     if (result1.size() > 0)
