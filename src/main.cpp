@@ -758,7 +758,7 @@ const char *GetPluginAuthor()
 
 const char *GetPluginVersion()
 {
-    return "1.0.2";
+    return "1.0.3";
 }
 
 const char *GetPluginName()
