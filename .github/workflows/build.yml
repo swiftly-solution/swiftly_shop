@@ -1,4 +1,4 @@
-name: "swiftly_shop Compiler"
+name: "swiftly_rank Compiler"
 
 on:
     push:
@@ -25,7 +25,7 @@ jobs:
             - name: Checkout
               uses: actions/checkout@v4
               with:
-                  path: swiftly_shop
+                  path: swiftly_rank
                   submodules: recursive
 
             - name: Checkout Swiftly
@@ -40,7 +40,7 @@ jobs:
                   cd swiftly; mv plugin_files/scripting/* ..; cd ..
 
             - name: Build
-              working-directory: swiftly_shop
+              working-directory: swiftly_rank
               run: |
                   make
 
@@ -48,12 +48,12 @@ jobs:
               if: matrix.os == 'ubuntu-latest'
               uses: actions/upload-artifact@v3
               with:
-                  name: swiftly_shop Plugin - Linux
-                  path: ${{ github.workspace }}/swiftly_shop/output
+                  name: swiftly_rank Plugin - Linux
+                  path: ${{ github.workspace }}/swiftly_rank/output
 
             - name: Upload Files - Windows
               if: matrix.os == 'windows-latest'
               uses: actions/upload-artifact@v3
               with:
-                  name: swiftly_shop Plugin - Windows
-                  path: ${{ github.workspace }}/swiftly_shop/output
+                  name: swiftly_rank Plugin - Windows
+                  path: ${{ github.workspace }}/swiftly_rank/output
